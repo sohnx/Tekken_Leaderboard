@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — Tekken Tournament</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="css/shared.css" />
+  <style>
+    .page-wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 3rem 0 2rem;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--neon-red);
+      text-shadow: 0 0 10px var(--neon-red-glow);
+      margin-bottom: 1rem;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #fff 0%, #00d4ff 50%, #b344ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* Main Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    /* Form Card */
+    .form-card {
+      padding: 2rem;
+    }
+
+    .form-card-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .form-card-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--neon-blue);
+      text-shadow: 0 0 10px rgba(0,212,255,0.3);
+      letter-spacing: 0.08em;
+    }
+
+    /* Edit mode indicator */
+    .edit-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(179,68,255,0.1);
+      border: 1px solid var(--neon-purple);
+      border-radius: 6px;
+      padding: 0.6rem 1rem;
+      margin-bottom: 1rem;
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      color: var(--neon-purple);
+    }
+    .edit-banner.visible { display: flex; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .form-grid .full-width { grid-column: 1 / -1; }
+
+    .paid-toggle {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      background: rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: all var(--transition-med);
+    }
+
+    .paid-toggle:hover { border-color: var(--neon-green); background: rgba(0,255,136,0.05); }
+    .paid-toggle.checked { border-color: var(--neon-green); background: rgba(0,255,136,0.08); }
+
+    .paid-toggle input[type="checkbox"] { display: none; }
+
+    .toggle-box {
+      width: 40px; height: 22px;
+      background: rgba(0,0,0,0.5);
+      border-radius: 11px;
+      border: 1px solid var(--border-subtle);
+      position: relative;
+      transition: all var(--transition-med);
+      flex-shrink: 0;
+    }
+
+    .toggle-box::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 16px; height: 16px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      transition: all var(--transition-med);
+    }
+
+    .paid-toggle.checked .toggle-box { background: rgba(0,255,136,0.3); border-color: var(--neon-green); }
+    .paid-toggle.checked .toggle-box::after { left: calc(100% - 18px); background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); }
+
+    .toggle-label {
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .paid-toggle.checked .toggle-label { color: var(--neon-green); }
+
+    /* Player List Panel */
+    .players-panel {
+      padding: 1.5rem;
+    }
+
+    .players-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .player-count {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--neon-red);
+      text-shadow: var(--shadow-red);
+    }
+
+    .search-box {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .search-box input {
+      padding-left: 2.5rem;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .players-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+
+    .player-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(0,0,0,0.3);
+      transition: all var(--transition-fast);
+      cursor: default;
+    }
+
+    .player-item:hover { border-color: var(--neon-blue); background: rgba(0,212,255,0.05); }
+
+    .player-avatar {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--neon-purple), var(--neon-red));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .player-info { flex: 1; min-width: 0; }
+
+    .player-tag {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-paid-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .player-paid-dot.paid { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
+    .player-paid-dot.unpaid { background: var(--neon-red); }
+
+    /* ✅ Edit button on player row */
+    .btn-edit-player {
+      background: none;
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-family: var(--font-display);
+      letter-spacing: 0.05em;
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+    }
+    .btn-edit-player:hover {
+      border-color: var(--neon-blue);
+      color: var(--neon-blue);
+      background: rgba(0,212,255,0.07);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+    }
+
+    /* Stats strip */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-mini {
+      padding: 1rem;
+      text-align: center;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.3);
+    }
+
+    .stat-mini-val {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      font-weight: 900;
+      display: block;
+    }
+
+    .stat-mini-label {
+      font-family: var(--font-display);
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .full-width { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background -->
+  <div class="bg-orbs">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">TEKKEN<span>ARENA</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Register</a></li>
+      <li><a href="admin.html">Admin Panel</a></li>
+      <li><a href="leaderboard.html">Leaderboard</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-wrapper">
+    <!-- Hero -->
+    <div class="hero">
+      <p class="hero-eyebrow">RCCIIT TechTrix Championship</p>
+      <h1 class="hero-title">PLAYER REGISTRATION</h1>
+      <p class="hero-sub">Register competitors for the Tekken 8 Tournament</p>
+    </div>
+
+    <!-- Stats Strip -->
+    <div class="stats-strip">
+      <div class="stat-mini glass-card">
+        <span class="stat-mini-val" id="stat-total" style="color: var(--neon-blue)">0</span>
+        <span class="stat-mini-label">Registered</span>
+      </div>
+      <div class="stat-mini glass-card">
+        <span class="stat-mini-val" id="stat-paid" style="color: var(--neon-green)">0</span>
+        <span class="stat-mini-label">Paid</span>
+      </div>
+      <div class="stat-mini glass-card">
+        <span class="stat-mini-val" id="stat-unpaid" style="color: var(--neon-red)">0</span>
+        <span class="stat-mini-label">Pending</span>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+      <!-- Registration / Edit Form -->
+      <div class="glass-card form-card">
+        <div class="form-card-header">
+          <div class="section-title form-card-title" id="form-title">⚔ Register New Fighter</div>
+        </div>
+
+        <!-- Edit mode banner -->
+        <div class="edit-banner" id="edit-banner">
+          <span>✏️ EDITING PLAYER — <span id="edit-banner-name"></span></span>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel-edit">✕ Cancel</button>
+        </div>
+
+        <form id="reg-form">
+          <!-- Hidden: tracks which player we're editing (null = new registration) -->
+          <input type="hidden" id="edit-player-id" value="" />
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input class="form-input" id="full_name" type="text" placeholder="Enter full name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number *</label>
+              <input class="form-input" id="phone_number" type="tel" placeholder="+91 9876543210" required />
+            </div>
+            <div class="form-group full-width">
+              <label class="form-label">Tekken Tag / Gamertag *</label>
+              <input class="form-input" id="tekken_name" type="text" placeholder="Your in-game name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">College Name</label>
+              <input class="form-input" id="college_name" type="text" placeholder="Optional" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Department</label>
+              <input class="form-input" id="department" type="text" placeholder="Optional" />
+            </div>
+            <div class="form-group full-width">
+              <label class="form-label">Registration Fee</label>
+              <label class="paid-toggle" id="paid-toggle">
+                <input type="checkbox" id="registration_paid" />
+                <div class="toggle-box"></div>
+                <span class="toggle-label">Payment Collected</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <button type="submit" class="btn btn-red btn-xl w-full" id="submit-btn" data-loading-text="Saving...">
+            ⚡ REGISTER FIGHTER
+          </button>
+        </form>
+      </div>
+
+      <!-- Player List -->
+      <div class="glass-card players-panel">
+        <div class="players-panel-header">
+          <div>
+            <div class="section-title" style="color: var(--neon-purple)">Fighters Roster</div>
+          </div>
+          <div class="player-count" id="player-count">0</div>
+        </div>
+
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input class="form-input" id="search-input" type="text" placeholder="Search fighter..." />
+        </div>
+
+        <div class="players-list" id="players-list">
+          <div class="empty-state">No fighters registered yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script>
+    let allPlayers = [];
+
+    // ─── Toggle paid UI ────────────────────────────────────────
+    const paidToggle = document.getElementById('paid-toggle');
+    const paidCheckbox = document.getElementById('registration_paid');
+    paidToggle.addEventListener('click', () => {
+      paidCheckbox.checked = !paidCheckbox.checked;
+      paidToggle.classList.toggle('checked', paidCheckbox.checked);
+    });
+
+    // ─── Edit mode helpers ─────────────────────────────────────
+    function enterEditMode(player) {
+      document.getElementById('edit-player-id').value = player.id;
+      document.getElementById('full_name').value = player.full_name;
+      document.getElementById('phone_number').value = player.phone_number;
+      document.getElementById('tekken_name').value = player.tekken_name;
+      document.getElementById('college_name').value = player.college_name || '';
+      document.getElementById('department').value = player.department || '';
+      paidCheckbox.checked = player.registration_paid;
+      paidToggle.classList.toggle('checked', player.registration_paid);
+
+      document.getElementById('form-title').textContent = '✏️ Edit Fighter';
+      document.getElementById('submit-btn').textContent = '💾 SAVE CHANGES';
+      document.getElementById('edit-banner-name').textContent = player.tekken_name;
+      document.getElementById('edit-banner').classList.add('visible');
+
+      // Scroll form into view on mobile
+      document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function exitEditMode() {
+      document.getElementById('edit-player-id').value = '';
+      document.getElementById('reg-form').reset();
+      paidCheckbox.checked = false;
+      paidToggle.classList.remove('checked');
+
+      document.getElementById('form-title').textContent = '⚔ Register New Fighter';
+      document.getElementById('submit-btn').textContent = '⚡ REGISTER FIGHTER';
+      document.getElementById('edit-banner').classList.remove('visible');
+    }
+
+    document.getElementById('btn-cancel-edit').addEventListener('click', exitEditMode);
+
+    // ─── Form submission (register OR update) ──────────────────
+    document.getElementById('reg-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      setLoading(btn, true);
+
+      const editId = document.getElementById('edit-player-id').value;
+      const isEditing = !!editId;
+
+      const payload = {
+        full_name: document.getElementById('full_name').value.trim(),
+        phone_number: document.getElementById('phone_number').value.trim(),
+        tekken_name: document.getElementById('tekken_name').value.trim(),
+        college_name: document.getElementById('college_name').value.trim() || null,
+        department: document.getElementById('department').value.trim() || null,
+        registration_paid: paidCheckbox.checked,
+      };
+
+      try {
+        if (isEditing) {
+          // ✅ FIX: Edit correctly calls PUT /players/{id} — not POST /register
+          // The old renderPlayers() had no edit button at all, meaning any
+          // "edit" logic was missing and registration data was not being updated.
+          await api.put(`/players/${editId}`, payload);
+          Toast.success(`Fighter "${payload.tekken_name}" updated!`);
+          exitEditMode();
+        } else {
+          await api.post('/players/register', payload);
+          Toast.success(`Fighter "${payload.tekken_name}" registered!`);
+          e.target.reset();
+          paidCheckbox.checked = false;
+          paidToggle.classList.remove('checked');
+        }
+        await loadPlayers();
+      } catch (err) {
+        Toast.error(err.message);
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // ─── Load players ──────────────────────────────────────────
+    async function loadPlayers() {
+      try {
+        allPlayers = await api.get('/players');
+        renderPlayers(allPlayers);
+        updateStats(allPlayers);
+      } catch (err) {
+        Toast.error('Failed to load players: ' + err.message);
+      }
+    }
+
+    function updateStats(players) {
+      const total = players.length;
+      const paid = players.filter(p => p.registration_paid).length;
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-paid').textContent = paid;
+      document.getElementById('stat-unpaid').textContent = total - paid;
+      document.getElementById('player-count').textContent = total;
+    }
+
+    // ─── Render player list with working edit button ───────────
+    function renderPlayers(players) {
+      const list = document.getElementById('players-list');
+      if (!players.length) {
+        list.innerHTML = '<div class="empty-state">No fighters registered yet</div>';
+        return;
+      }
+
+      list.innerHTML = players.map(p => `
+        <div class="player-item">
+          <div class="player-avatar">${p.tekken_name.substring(0,2).toUpperCase()}</div>
+          <div class="player-info">
+            <div class="player-tag">${escHtml(p.tekken_name)}</div>
+            <div class="player-meta">${escHtml(p.full_name)} · ${escHtml(p.college_name || 'No college')}</div>
+          </div>
+          <div class="player-paid-dot ${p.registration_paid ? 'paid' : 'unpaid'}" title="${p.registration_paid ? 'Paid' : 'Unpaid'}"></div>
+          <button class="btn-edit-player" data-id="${p.id}" title="Edit player">✏️</button>
+        </div>
+      `).join('');
+
+      // ✅ Attach edit handlers after rendering
+      // Using event delegation on data-id so clicking edit pre-fills the form
+      list.querySelectorAll('.btn-edit-player').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const player = allPlayers.find(p => p.id == btn.dataset.id);
+          if (player) enterEditMode(player);
+        });
+      });
+    }
+
+    function escHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ─── Search ────────────────────────────────────────────────
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      const q = e.target.value.toLowerCase();
+      const filtered = allPlayers.filter(p =>
+        p.tekken_name.toLowerCase().includes(q) ||
+        p.full_name.toLowerCase().includes(q) ||
+        (p.college_name || '').toLowerCase().includes(q)
+      );
+      renderPlayers(filtered);
+    });
+
+    // ─── Init ──────────────────────────────────────────────────
+    loadPlayers();
+    setInterval(loadPlayers, 15000); // Refresh every 15s
+  </script>
+</body>
+</html>

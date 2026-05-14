@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — Tekken Tournament</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="css/shared.css" />
+  <style>
+
+    .body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+    } 
+    /* ── Text Visibility Fixes ───────────────────────────────── */
+    /* Override the near-invisible --text-muted on this page */
+    .form-label       { color: #a0b4d0 !important; }
+    .player-select-label { color: #a0b4d0; }
+    .selected-player-meta { color: #8aaccc !important; }
+    .history-match-id { color: #7a9ab8 !important; }
+    .history-vs       { color: #7a9ab8 !important; }
+    .history-time     { color: #7a9ab8 !important; }
+    .lb-table th      { color: #8aaccc !important; }
+    .lb-tag           { color: #8aaccc !important; }
+    .active-match-title { letter-spacing: 0.25em; }
+    .round-btn        { color: #8aaccc !important; }
+    .round-btn.active, .round-btn:hover { color: var(--neon-purple) !important; }
+
+    /* ── Page Layout ─────────────────────────────────────────── */
+    .page-wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--neon-red);
+      text-shadow: 0 0 10px rgba(255,26,60,0.35);
+      margin-bottom: 1.5rem;
+    }
+
+    .admin-grid {
+      display: grid;
+    /* Left side bigger */
+      grid-template-columns: 540px 1fr;
+      grid-template-rows: auto auto;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .match-ctrl {
+      padding: 1.5rem;
+      grid-row: 1 / 3;
+    }
+
+    /* ── Corner Select Boxes ─────────────────────────────────── */
+    .player-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .vs-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .vs-badge {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--neon-red);
+      text-shadow: var(--shadow-red);
+      animation: vsPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes vsPulse {
+      0%, 100% { text-shadow: 0 0 10px var(--neon-red-glow); }
+      50% { text-shadow: 0 0 30px var(--neon-red-glow), 0 0 60px rgba(255,26,60,0.3); }
+    }
+
+    .vs-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--neon-red), transparent);
+      opacity: 0.4;
+    }
+
+    .player-select-box {
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.4);
+      padding: 1rem;
+      transition: all var(--transition-med);
+    }
+
+    .player-select-box.selected-p1 { border-color: var(--neon-blue); background: rgba(0,212,255,0.06); }
+    .player-select-box.selected-p2 { border-color: var(--neon-red);  background: rgba(255,26,60,0.06); }
+
+    .player-select-label {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .p1-label { color: var(--neon-blue); text-shadow: 0 0 8px rgba(0,212,255,0.5); }
+    .p2-label { color: var(--neon-red);  text-shadow: 0 0 8px rgba(255,26,60,0.5); }
+
+    /* ── Styled Select Dropdown ──────────────────────────────── */
+    .corner-select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      color: #e8eaf6;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      padding: 0.7rem 2.2rem 0.7rem 0.9rem;
+      outline: none;
+      cursor: pointer;
+      transition: all var(--transition-med);
+      appearance: none;
+      -webkit-appearance: none;
+      /* custom arrow */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300d4ff' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+    }
+
+    .corner-select:focus {
+      border-color: var(--neon-blue);
+      box-shadow: 0 0 0 2px rgba(0,212,255,0.15), 0 0 15px rgba(0,212,255,0.1);
+    }
+
+    .corner-select option {
+      background: #0a0e1a;
+      color: #e8eaf6;
+      padding: 0.5rem;
+    }
+
+    .corner-select option:disabled {
+      color: #4a5a78;
+    }
+
+    /* Blue corner: blue-tinted select */
+    .corner-select.blue-corner {
+      border-color: rgba(0,212,255,0.35);
+      background-color: rgba(0,20,40,0.7);
+    }
+    .corner-select.blue-corner:focus {
+      border-color: var(--neon-blue);
+      box-shadow: 0 0 0 2px rgba(0,212,255,0.2), 0 0 20px rgba(0,212,255,0.15);
+    }
+
+    /* Red corner: red-tinted select */
+    .corner-select.red-corner {
+      border-color: rgba(255,26,60,0.35);
+      background-color: rgba(40,5,10,0.7);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ff1a3c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    }
+    .corner-select.red-corner:focus {
+      border-color: var(--neon-red);
+      box-shadow: 0 0 0 2px rgba(255,26,60,0.2), 0 0 20px rgba(255,26,60,0.15);
+    }
+
+    /* Selected player info strip below the dropdown */
+    .selected-player-name {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      min-height: 1.4rem;
+      margin-top: 0.6rem;
+    }
+
+    .selected-player-meta {
+      font-size: 0.82rem;
+      color: #8aaccc;
+      margin-top: 0.2rem;
+    }
+
+    /* ── Round Type ──────────────────────────────────────────── */
+    .round-types {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .round-btn {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .round-btn.active,
+    .round-btn:hover {
+      border-color: var(--neon-purple);
+      background: rgba(179,68,255,0.1);
+    }
+
+    /* ── Match Actions ───────────────────────────────────────── */
+    .match-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .winner-btns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .winner-btn {
+      padding: 1.25rem 1rem;
+      font-size: 0.8rem;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .winner-btn .btn-player {
+      display: block;
+      font-size: 1rem;
+      font-weight: 800;
+      margin-top: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    /* ── Active Match Card ───────────────────────────────────── */
+    .active-match-card {
+      border: 1px solid var(--neon-red);
+      box-shadow: 0 0 20px rgba(255,26,60,0.2);
+      border-radius: 10px;
+      padding: 1rem;
+      background: rgba(255,26,60,0.05);
+      margin-bottom: 1rem;
+    }
+
+    .active-match-players {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    /* ── Right Column ────────────────────────────────────────── */
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .leaderboard-preview {
+      padding: 1.5rem;
+      flex: 0 0 auto;
+    }
+
+    .lb-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .lb-table th {
+      font-family: var(--font-display);
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .lb-table td {
+      padding: 0.6rem 0.75rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+    }
+
+    .lb-table tr:last-child td { border-bottom: none; }
+    .lb-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .lb-rank {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 0.9rem;
+      width: 50px;
+    }
+
+    .lb-name { font-weight: 600; color: var(--text-primary); }
+    .lb-score {
+      font-family: var(--font-display);
+      font-weight: 800;
+      color: var(--neon-blue);
+      text-shadow: 0 0 8px rgba(0,212,255,0.4);
+    }
+
+    /* ── Match History ───────────────────────────────────────── */
+    .history-card {
+      padding: 1.5rem;
+      flex: 1;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(0,0,0,0.25);
+      font-size: 0.85rem;
+      transition: all var(--transition-fast);
+    }
+
+    .history-item:hover { background: rgba(255,255,255,0.03); }
+
+    .history-match-id {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      min-width: 45px;
+    }
+
+    .history-players {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+
+    .history-p1 { color: var(--neon-blue); font-weight: 600; }
+    .history-p2 { color: var(--neon-red);  font-weight: 600; }
+    .history-winner { color: var(--neon-green); font-weight: 700; }
+
+    .history-status {
+      font-family: var(--font-display);
+      font-size: 0.65rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .history-time {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+    }
+
+    @media (max-width: 1100px) {
+      .admin-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
+      .match-ctrl { grid-row: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+
+  <nav class="nav">
+    <a href="index.html" class="nav-logo">TEKKEN<span>ARENA</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Register</a></li>
+      <li><a href="admin.html" class="active">Admin Panel</a></li>
+      <li><a href="leaderboard.html">Leaderboard</a></li>
+    </ul>
+  </nav>
+
+  <div class="ws-status-bar disconnected" id="ws-status">
+    <span class="status-dot offline"></span>
+    <span class="ws-label">CONNECTING...</span>
+  </div>
+
+  <div class="page-wrapper">
+    <h1 class="page-title">⚡ Admin Control Panel</h1>
+
+    <div class="admin-grid">
+      <!-- Left: Match Control -->
+      <div class="glass-card match-ctrl">
+        <div class="section-header">
+          <span class="section-title">Match Control</span>
+          <div class="section-line"></div>
+        </div>
+
+        <!-- Active match indicator -->
+        <div id="active-match-card" class="active-match-card hidden">
+          <div class="active-match-title" style="font-family:var(--font-display);font-size:0.65rem;letter-spacing:0.3em;text-transform:uppercase;color:var(--neon-red);margin-bottom:0.5rem;">🔴 LIVE MATCH</div>
+          <div class="active-match-players">
+            <span id="am-p1" class="p1-label">—</span>
+            <span style="color:#7a9ab8">VS</span>
+            <span id="am-p2" class="p2-label">—</span>
+          </div>
+          <div style="text-align:center;margin-top:0.35rem;font-family:var(--font-mono);font-size:0.7rem;color:#7a9ab8" id="am-id"></div>
+        </div>
+
+        <!-- Player Selection via Dropdowns -->
+        <div class="player-selector">
+
+          <!-- Blue Corner -->
+          <div class="player-select-box" id="p1-box">
+            <div class="player-select-label p1-label">
+              🔵 Player A — Blue Corner
+            </div>
+            <select class="corner-select blue-corner" id="p1-select">
+              <option value="" disabled selected>— Select Blue Corner Fighter —</option>
+            </select>
+            <div class="selected-player-name" id="p1-name"></div>
+            <div class="selected-player-meta" id="p1-meta"></div>
+          </div>
+
+          <div class="vs-divider">
+            <div class="vs-line"></div>
+            <div class="vs-badge">VS</div>
+            <div class="vs-line"></div>
+          </div>
+
+          <!-- Red Corner -->
+          <div class="player-select-box" id="p2-box">
+            <div class="player-select-label p2-label">
+              🔴 Player B — Red Corner
+            </div>
+            <select class="corner-select red-corner" id="p2-select">
+              <option value="" disabled selected>— Select Red Corner Fighter —</option>
+            </select>
+            <div class="selected-player-name" id="p2-name"></div>
+            <div class="selected-player-meta" id="p2-meta"></div>
+          </div>
+        </div>
+
+        <!-- Round Type -->
+        <div style="margin-bottom:1rem;">
+          <div class="form-label" style="margin-bottom:0.5rem;">Round Type</div>
+          <div class="round-types">
+            <button class="round-btn active" data-type="regular">Regular</button>
+            <button class="round-btn" data-type="quarterfinal">Quarterfinal</button>
+            <button class="round-btn" data-type="semifinal">Semifinal</button>
+            <button class="round-btn" data-type="final">Final</button>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group">
+          <label class="form-label">Match Notes</label>
+          <input class="form-input" id="match-notes" type="text" placeholder="Optional notes..." />
+        </div>
+
+        <div class="match-actions">
+          <button class="btn btn-blue btn-lg w-full" id="btn-start" data-loading-text="Starting...">
+            ▶ START MATCH
+          </button>
+
+          <div class="winner-btns">
+            <button class="btn btn-blue winner-btn" id="btn-win-p1" data-loading-text="Recording..." disabled>
+              🏆 PLAYER A WON
+              <span class="btn-player" id="win-p1-label">—</span>
+            </button>
+            <button class="btn btn-red winner-btn" id="btn-win-p2" data-loading-text="Recording..." disabled>
+              🏆 PLAYER B WON
+              <span class="btn-player" id="win-p2-label">—</span>
+            </button>
+          </div>
+
+          <div class="action-row">
+            <button class="btn btn-purple btn-lg" id="btn-rematch" data-loading-text="Creating rematch..." disabled>
+              🔄 REMATCH
+            </button>
+            <button class="btn btn-ghost btn-lg" id="btn-undo" data-loading-text="Undoing...">
+              ↩ UNDO LAST
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="right-col">
+        <!-- Live Leaderboard Preview -->
+        <div class="glass-card leaderboard-preview">
+          <div class="section-header">
+            <span class="section-title" style="color:var(--neon-gold)">🏆 Live Rankings</span>
+            <div class="section-line"></div>
+            <a href="leaderboard.html" class="btn btn-ghost btn-sm" target="_blank">Full View ↗</a>
+          </div>
+
+          <table class="lb-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Fighter</th>
+                <th>W</th>
+                <th>L</th>
+                <th>Matches</th>
+                <th>W/L</th>
+                <th>Streak</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody id="lb-preview-body">
+              <tr><td colspan="8" style="text-align:center;color:#7a9ab8;padding:2rem;font-family:var(--font-display);font-size:0.75rem;letter-spacing:0.1em;">LOADING...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Match History -->
+        <div class="glass-card history-card">
+          <div class="section-header">
+            <span class="section-title">📋 Match History</span>
+            <div class="section-line"></div>
+            <button class="btn btn-ghost btn-sm" id="btn-refresh-history">↻ Refresh</button>
+          </div>
+
+          <div class="history-list" id="history-list">
+            <div style="text-align:center;color:#7a9ab8;padding:1rem;font-family:var(--font-display);font-size:0.75rem;letter-spacing:0.1em;">NO MATCHES YET</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/shared.js"></script>
+  <script>
+    let players = [];
+    let selectedP1 = null;
+    let selectedP2 = null;
+    let currentMatchId = null;
+    let lastMatchId = null;
+    let selectedRoundType = 'regular';
+
+    // ─── WebSocket ──────────────────────────────────────────────
+    const wsClient = new WSClient('/ws/leaderboard', (msg) => {
+      if (msg.type === 'leaderboard_update') renderLBPreview(msg.data.entries);
+      if (msg.type === 'match_result') loadHistory();
+    });
+    wsClient.setStatusEl(document.getElementById('ws-status'));
+
+    // ─── Round Type ────────────────────────────────────────────
+    document.querySelectorAll('.round-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.round-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedRoundType = btn.dataset.type;
+      });
+    });
+
+    // ─── Populate Dropdowns from DB ───────────────────────────
+  // ─── Populate Dropdowns from DB ───────────────────────────
+
+const p1Select = document.getElementById('p1-select');
+const p2Select = document.getElementById('p2-select');
+
+function buildOptions(excludeId) {
+
+  // Only paid players appear
+  const eligible = players.filter(p => p.registration_paid);
+
+  if (!eligible.length) {
+    return `
+      <option value="" disabled>
+        No paid players registered yet
+      </option>
+    `;
+  }
+
+  return eligible
+    .filter(p => String(p.id) !== String(excludeId))
+    .map(p => {
+
+      const stats = p.stats
+        ? `${p.stats.wins}W ${p.stats.losses}L`
+        : '0W 0L';
+
+      const streak =
+        p.stats && p.stats.current_streak > 0
+          ? ` 🔥${p.stats.current_streak}`
+          : '';
+
+      return `
+        <option value="${p.id}">
+          ${escHtml(p.tekken_name)}
+          — ${escHtml(p.full_name)}
+          [${stats}${streak}]
+        </option>
+      `;
+    })
+    .join('');
+}
+
+function refreshDropdowns() {
+
+  const currentP1 = p1Select.value;
+  const currentP2 = p2Select.value;
+
+  // Build P1 dropdown
+  p1Select.innerHTML =
+    '<option value="" disabled selected>— Select Blue Corner Fighter —</option>' +
+    buildOptions(currentP2);
+
+  // Build P2 dropdown
+  p2Select.innerHTML =
+    '<option value="" disabled selected>— Select Red Corner Fighter —</option>' +
+    buildOptions(currentP1);
+
+  // Restore previous selections if still valid
+  if (currentP1) {
+    p1Select.value = currentP1;
+  }
+
+  if (currentP2) {
+    p2Select.value = currentP2;
+  }
+}
+
+
+// ─── Player 1 Selection ────────────────────────────────────
+
+p1Select.addEventListener('change', () => {
+
+  selectedP1 =
+    players.find(p => String(p.id) === String(p1Select.value))
+    || null;
+
+  // Update UI
+  if (selectedP1) {
+
+    document.getElementById('p1-name').textContent =
+      selectedP1.tekken_name;
+
+    document.getElementById('p1-meta').textContent =
+      `${selectedP1.full_name} · ${selectedP1.college_name || 'Independent'}`;
+
+    document.getElementById('p1-box').className =
+      'player-select-box selected-p1';
+
+  } else {
+
+    document.getElementById('p1-name').textContent = '';
+    document.getElementById('p1-meta').textContent = '';
+
+    document.getElementById('p1-box').className =
+      'player-select-box';
+  }
+
+  // Refresh opposite dropdown
+  const currentP2 = p2Select.value;
+
+  p2Select.innerHTML =
+    '<option value="" disabled selected>— Select Red Corner Fighter —</option>' +
+    buildOptions(p1Select.value);
+
+  // Restore P2 if still valid
+  if (currentP2 && currentP2 !== p1Select.value) {
+    p2Select.value = currentP2;
+  }
+});
+
+
+// ─── Player 2 Selection ────────────────────────────────────
+
+p2Select.addEventListener('change', () => {
+
+  selectedP2 =
+    players.find(p => String(p.id) === String(p2Select.value))
+    || null;
+
+  // Update UI
+  if (selectedP2) {
+
+    document.getElementById('p2-name').textContent =
+      selectedP2.tekken_name;
+
+    document.getElementById('p2-meta').textContent =
+      `${selectedP2.full_name} · ${selectedP2.college_name || 'Independent'}`;
+
+    document.getElementById('p2-box').className =
+      'player-select-box selected-p2';
+
+  } else {
+
+    document.getElementById('p2-name').textContent = '';
+    document.getElementById('p2-meta').textContent = '';
+
+    document.getElementById('p2-box').className =
+      'player-select-box';
+  }
+
+  // Refresh opposite dropdown
+  const currentP1 = p1Select.value;
+
+  p1Select.innerHTML =
+    '<option value="" disabled selected>— Select Blue Corner Fighter —</option>' +
+    buildOptions(p2Select.value);
+
+  // Restore P1 if still valid
+  if (currentP1 && currentP1 !== p2Select.value) {
+    p1Select.value = currentP1;
+  }
+});
+
+    // ─── Start Match ───────────────────────────────────────────
+    document.getElementById('btn-start').addEventListener('click', async () => {
+      if (!selectedP1 || !selectedP2) { Toast.warning('Select both fighters first!'); return; }
+
+      const btn = document.getElementById('btn-start');
+      setLoading(btn, true);
+      try {
+        const result = await api.post('/matches/start', {
+          player1_id: selectedP1.id,
+          player2_id: selectedP2.id,
+          round_type: selectedRoundType,
+          match_notes: document.getElementById('match-notes').value.trim() || null,
+        });
+        currentMatchId = result.match_id;
+        lastMatchId = result.match_id;
+        Toast.success(`Match started: ${selectedP1.tekken_name} vs ${selectedP2.tekken_name}`);
+        updateActiveMatchUI(true);
+      } catch (err) {
+        Toast.error(err.message);
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    function updateActiveMatchUI(matchActive) {
+      const card = document.getElementById('active-match-card');
+      const winP1 = document.getElementById('btn-win-p1');
+      const winP2 = document.getElementById('btn-win-p2');
+      const rematch = document.getElementById('btn-rematch');
+
+      if (matchActive && selectedP1 && selectedP2) {
+        card.classList.remove('hidden');
+        document.getElementById('am-p1').textContent = selectedP1.tekken_name;
+        document.getElementById('am-p2').textContent = selectedP2.tekken_name;
+        document.getElementById('am-id').textContent = `Match #${currentMatchId}`;
+        winP1.disabled = false;
+        winP2.disabled = false;
+        document.getElementById('win-p1-label').textContent = selectedP1.tekken_name;
+        document.getElementById('win-p2-label').textContent = selectedP2.tekken_name;
+        rematch.disabled = true;
+      } else {
+        card.classList.add('hidden');
+        winP1.disabled = true;
+        winP2.disabled = true;
+        rematch.disabled = false;
+      }
+    }
+
+    // ─── Record Winner ─────────────────────────────────────────
+    async function recordWinner(winnerId) {
+      if (!currentMatchId) { Toast.warning('No active match!'); return; }
+      const btn = winnerId === selectedP1?.id
+        ? document.getElementById('btn-win-p1')
+        : document.getElementById('btn-win-p2');
+      setLoading(btn, true);
+      try {
+        await api.post('/matches/result', { match_id: currentMatchId, winner_id: winnerId });
+        const winnerTag = winnerId === selectedP1?.id ? selectedP1.tekken_name : selectedP2.tekken_name;
+        Toast.success(`🏆 ${winnerTag} WINS!`);
+        lastMatchId = currentMatchId;
+        currentMatchId = null;
+        updateActiveMatchUI(false);
+        await loadHistory();
+        await loadPlayers(); // Refresh dropdowns with updated stats
+      } catch (err) {
+        Toast.error(err.message);
+      } finally {
+        setLoading(btn, false);
+      }
+    }
+
+    document.getElementById('btn-win-p1').addEventListener('click', () => {
+      if (selectedP1) recordWinner(selectedP1.id);
+    });
+    document.getElementById('btn-win-p2').addEventListener('click', () => {
+      if (selectedP2) recordWinner(selectedP2.id);
+    });
+
+    // ─── Rematch ───────────────────────────────────────────────
+    document.getElementById('btn-rematch').addEventListener('click', async () => {
+      if (!lastMatchId) { Toast.warning('No recent match to rematch!'); return; }
+      const btn = document.getElementById('btn-rematch');
+      setLoading(btn, true);
+      try {
+        const result = await api.post('/matches/rematch', { match_id: lastMatchId });
+        currentMatchId = result.match_id;
+        Toast.info(`🔄 Rematch started! Match #${result.match_id}`);
+        // Swap corners for rematch
+        const tmp = selectedP1;
+        selectedP1 = selectedP2;
+        selectedP2 = tmp;
+        updateActiveMatchUI(true);
+        await loadHistory();
+      } catch (err) {
+        Toast.error(err.message);
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // ─── Undo Last Match ───────────────────────────────────────
+    document.getElementById('btn-undo').addEventListener('click', async () => {
+      if (!confirm('Undo the last completed match? This will reverse stats.')) return;
+      const btn = document.getElementById('btn-undo');
+      setLoading(btn, true);
+      try {
+        const result = await api.post('/matches/undo-last', {});
+        Toast.warning(`↩ Match #${result.undone_match.match_id} undone`);
+        lastMatchId = null;
+        await loadHistory();
+        await loadPlayers();
+      } catch (err) {
+        Toast.error(err.message);
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // ─── Leaderboard Preview ───────────────────────────────────
+    function renderLBPreview(entries) {
+      const tbody = document.getElementById('lb-preview-body');
+      if (!entries || !entries.length) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#7a9ab8;padding:1.5rem;font-family:var(--font-display);font-size:0.75rem;letter-spacing:0.1em;">NO FIGHTERS</td></tr>`;
+        return;
+      }
+
+      const rankColors = ['var(--rank-1)', 'var(--rank-2)', 'var(--rank-3)'];
+      tbody.innerHTML = entries.slice(0, 10).map(e => `
+        <tr>
+          <td class="lb-rank" style="color:${rankColors[e.rank - 1] || 'var(--text-secondary)'}">
+            ${e.rank <= 3 ? ['👑','🥈','🥉'][e.rank-1] : e.rank}
+          </td>
+          <td>
+            <div class="lb-name">${escHtml(e.tekken_name)}</div>
+            <div class="lb-tag">${escHtml(e.full_name)}</div>
+          </td>
+          <td style="color:var(--neon-green);font-weight:700">${e.wins}</td>
+          <td style="color:var(--neon-red);font-weight:700">${e.losses}</td>
+          <td style="color:var(--text-secondary);font-weight:700">${e.total_matches}</td>
+          <td style="color:var(--neon-blue);font-family:var(--font-mono);font-size:0.8rem">${e.win_ratio}%<br><span style="font-size:0.7em;color:var(--text-muted)">${e.wins}/${e.losses}</span></td>
+          <td class="streak-fire ${e.current_streak >= 3 ? 'hot' : ''}">${getStreakDisplay(e.current_streak)}</td>
+          <td class="lb-score">${e.score}</td>
+        </tr>
+      `).join('');
+    }
+
+    // ─── Match History ─────────────────────────────────────────
+    async function loadHistory() {
+      try {
+        const data = await api.get('/matches/history?limit=30');
+        const list = document.getElementById('history-list');
+
+        if (!data.matches.length) {
+          list.innerHTML = `<div style="text-align:center;color:#7a9ab8;padding:1rem;font-family:var(--font-display);font-size:0.75rem;letter-spacing:0.1em;">NO MATCHES YET</div>`;
+          return;
+        }
+
+        list.innerHTML = data.matches.map(m => `
+          <div class="history-item">
+            <div class="history-match-id">#${m.id}${m.is_rematch ? ' 🔄' : ''}</div>
+            <div class="history-players">
+              <span class="history-p1">${escHtml(m.player1_name || '?')}</span>
+              <span class="history-vs">vs</span>
+              <span class="history-p2">${escHtml(m.player2_name || '?')}</span>
+            </div>
+            <div class="history-status" style="color:${m.status === 'completed' ? 'var(--neon-green)' : 'var(--neon-gold)'}">
+              ${m.status === 'completed' ? `W: ${escHtml(m.winner_name || '?')}` : '⏳ PENDING'}
+            </div>
+            <div class="history-time">${m.played_at ? formatDate(m.played_at) : '—'}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        Toast.error('Failed to load history');
+      }
+    }
+
+    document.getElementById('btn-refresh-history').addEventListener('click', loadHistory);
+
+    // ─── Load Players & Rebuild Dropdowns ─────────────────────
+    async function loadPlayers() {
+      try {
+        players = await api.get('/players');
+        // Rebuild dropdowns, preserving current selections
+        const curP1 = selectedP1?.id;
+        const curP2 = selectedP2?.id;
+        refreshDropdowns();
+        if (curP1) p1Select.value = curP1;
+        if (curP2) p2Select.value = curP2;
+      } catch (err) {
+        Toast.error('Failed to load players');
+      }
+    }
+
+    async function loadLeaderboard() {
+      try {
+        const data = await api.get('/leaderboard/top10');
+        renderLBPreview(data.entries);
+      } catch (err) {
+        console.warn('Failed to load leaderboard');
+      }
+    }
+
+    function escHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ─── Init ──────────────────────────────────────────────────
+    (async () => {
+      await Promise.all([loadPlayers(), loadHistory(), loadLeaderboard()]);
+    })();
+  </script>
+</body>
+</html>
