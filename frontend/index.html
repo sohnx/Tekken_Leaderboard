@@ -407,11 +407,17 @@
             </div>
             <div class="form-group full-width">
               <label class="form-label">Registration Fee</label>
-              <label class="paid-toggle" id="paid-toggle">
-                <input type="checkbox" id="registration_paid" />
-                <div class="toggle-box"></div>
-                <span class="toggle-label">Payment Collected</span>
-              </label>
+              <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+                <label class="paid-toggle" id="paid-toggle">
+                  <input type="checkbox" id="registration_paid" />
+                  <div class="toggle-box"></div>
+                  <span class="toggle-label">Payment Collected</span>
+                </label>
+                <div id="amount-field" style="display:none; align-items:center; gap:0.5rem;">
+                  <span style="color:var(--neon-green); font-family:var(--font-display); font-size:0.8rem;">₹</span>
+                  <input class="form-input" id="amount_paid" type="number" min="0" step="1" placeholder="Amount" style="width:120px;" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -451,9 +457,17 @@
     // ─── Toggle paid UI ────────────────────────────────────────
     const paidToggle = document.getElementById('paid-toggle');
     const paidCheckbox = document.getElementById('registration_paid');
+    const amountField = document.getElementById('amount-field');
+
+    function syncAmountVisibility() {
+      amountField.style.display = paidCheckbox.checked ? 'flex' : 'none';
+      if (!paidCheckbox.checked) document.getElementById('amount_paid').value = '';
+    }
+
     paidToggle.addEventListener('click', () => {
       paidCheckbox.checked = !paidCheckbox.checked;
       paidToggle.classList.toggle('checked', paidCheckbox.checked);
+      syncAmountVisibility();
     });
 
     // ─── Edit mode helpers ─────────────────────────────────────
@@ -466,6 +480,8 @@
       document.getElementById('department').value = player.department || '';
       paidCheckbox.checked = player.registration_paid;
       paidToggle.classList.toggle('checked', player.registration_paid);
+      document.getElementById('amount_paid').value = player.payment?.amount_paid ?? '';
+      syncAmountVisibility();
 
       document.getElementById('form-title').textContent = '✏️ Edit Fighter';
       document.getElementById('submit-btn').textContent = '💾 SAVE CHANGES';
@@ -481,6 +497,8 @@
       document.getElementById('reg-form').reset();
       paidCheckbox.checked = false;
       paidToggle.classList.remove('checked');
+      document.getElementById('amount_paid').value = '';
+      syncAmountVisibility();
 
       document.getElementById('form-title').textContent = '⚔ Register New Fighter';
       document.getElementById('submit-btn').textContent = '⚡ REGISTER FIGHTER';
@@ -505,6 +523,9 @@
         college_name: document.getElementById('college_name').value.trim() || null,
         department: document.getElementById('department').value.trim() || null,
         registration_paid: paidCheckbox.checked,
+        amount_paid: paidCheckbox.checked && document.getElementById('amount_paid').value
+          ? parseFloat(document.getElementById('amount_paid').value)
+          : null,
       };
 
       try {
@@ -521,6 +542,8 @@
           e.target.reset();
           paidCheckbox.checked = false;
           paidToggle.classList.remove('checked');
+          document.getElementById('amount_paid').value = '';
+          syncAmountVisibility();
         }
         await loadPlayers();
       } catch (err) {
@@ -565,7 +588,8 @@
             <div class="player-tag">${escHtml(p.tekken_name)}</div>
             <div class="player-meta">${escHtml(p.full_name)} · ${escHtml(p.college_name || 'No college')}</div>
           </div>
-          <div class="player-paid-dot ${p.registration_paid ? 'paid' : 'unpaid'}" title="${p.registration_paid ? 'Paid' : 'Unpaid'}"></div>
+          <div class="player-paid-dot ${p.registration_paid ? 'paid' : 'unpaid'}" title="${p.registration_paid ? `Paid${p.payment ? ': ₹' + p.payment.amount_paid : ''}` : 'Unpaid'}"></div>
+          ${p.registration_paid && p.payment ? `<span style="font-family:var(--font-display);font-size:0.7rem;color:var(--neon-green);min-width:48px;text-align:right;">₹${p.payment.amount_paid}</span>` : ''}
           <button class="btn-edit-player" data-id="${p.id}" title="Edit player">✏️</button>
         </div>
       `).join('');
