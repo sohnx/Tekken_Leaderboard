@@ -47,7 +47,7 @@ class ConnectionManager:
         message = {
             "type": "leaderboard_update",
             "data": leaderboard_data,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         await self.broadcast(message)
 

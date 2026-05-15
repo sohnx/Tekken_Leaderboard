@@ -46,8 +46,8 @@ class Match(Base):
     winner_id = Column(Integer, ForeignKey("players.id", ondelete="RESTRICT"), nullable=True)
     loser_id = Column(Integer, ForeignKey("players.id", ondelete="RESTRICT"), nullable=True)
     is_rematch = Column(Boolean, default=False, nullable=False)
-    parent_match_id = Column(Integer, ForeignKey("matches.id"), nullable=True)  # for rematch tracking
-    round_type = Column(String(50), default="regular", nullable=False)  # regular, rematch, final, semifinal
+    parent_match_id = Column(Integer, ForeignKey("matches.id"), nullable=True)
+    round_type = Column(String(50), default="regular", nullable=False)
     match_notes = Column(Text, nullable=True)
     played_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -89,12 +89,12 @@ class PlayerStats(Base):
     )
 
     def recalculate(self):
-        """Recalculate derived stats. Score = (Wins×3) - Losses + (CurrentStreak×2)"""
+        """Recalculate derived stats. Score = (Wins×4) + (Losses×1)"""
         if self.total_matches > 0:
             self.win_ratio = round(self.wins / self.total_matches, 4)
         else:
             self.win_ratio = 0.0
-        self.score = (self.wins * 3) - self.losses + (self.current_streak * 2)
+        self.score = (self.wins * 4) + self.losses
 
     def __repr__(self):
         return f"<PlayerStats player={self.player_id} score={self.score}>"
@@ -104,7 +104,7 @@ class AdminLog(Base):
     __tablename__ = "admin_logs"
 
     id = Column(Integer, primary_key=True, index=True)
-    action_type = Column(String(50), nullable=False)  # REGISTER, MATCH_RESULT, REMATCH, UNDO, UPDATE, DELETE
+    action_type = Column(String(50), nullable=False)
     description = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
