@@ -13,6 +13,7 @@ class PlayerCreate(BaseModel):
     college_name: Optional[str] = Field(None, max_length=150)
     department: Optional[str] = Field(None, max_length=100)
     registration_paid: bool = False
+    amount_paid: Optional[float] = Field(None, ge=0)
 
     @field_validator("phone_number")
     @classmethod
@@ -37,6 +38,7 @@ class PlayerUpdate(BaseModel):
     college_name: Optional[str] = None
     department: Optional[str] = None
     registration_paid: Optional[bool] = None
+    amount_paid: Optional[float] = Field(None, ge=0)
 
 
 class PlayerStatsOut(BaseModel):
@@ -52,6 +54,15 @@ class PlayerStatsOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PaymentOut(BaseModel):
+    amount_paid: float
+    payment_method: Optional[str]
+    notes: Optional[str]
+    paid_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class PlayerOut(BaseModel):
     id: int
     full_name: str
@@ -61,6 +72,7 @@ class PlayerOut(BaseModel):
     registration_paid: bool
     created_at: datetime
     stats: Optional[PlayerStatsOut] = None
+    payment: Optional[PaymentOut] = None
 
     model_config = {"from_attributes": True}
 

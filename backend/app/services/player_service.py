@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Player, PlayerStats, AdminLog
+from app.models import Player, PlayerStats, AdminLog, RegistrationPayment
 from app.schemas import PlayerCreate, PlayerUpdate
 
 logger = logging.getLogger(__name__)
@@ -37,8 +37,9 @@ async def create_player(db: AsyncSession, data: PlayerCreate) -> Player:
             f"Tekken name '{data.tekken_name}' is already taken."
         )
 
-    # Create player
-    player = Player(**data.model_dump())
+    # Create player (exclude amount_paid — it goes to separate table)
+    player_data = data.model_dump(exclude={"amount_paid"})
+    player = Player(**player_data)
     db.add(player)
 
     # Get generated ID
@@ -47,6 +48,14 @@ async def create_player(db: AsyncSession, data: PlayerCreate) -> Player:
     # Initialize stats
     stats = PlayerStats(player_id=player.id)
     db.add(stats)
+
+    # Create payment record if paid
+    if data.registration_paid and data.amount_paid is not None:
+        payment = RegistrationPayment(
+            player_id=player.id,
+            amount_paid=data.amount_paid,
+        )
+        db.add(payment)
 
     # Log registration
     log = AdminLog(
@@ -66,7 +75,7 @@ async def create_player(db: AsyncSession, data: PlayerCreate) -> Player:
     # Reload with stats
     result = await db.execute(
         select(Player)
-        .options(selectinload(Player.stats))
+        .options(selectinload(Player.stats), selectinload(Player.payment))
         .where(Player.id == player.id)
     )
 
@@ -81,7 +90,7 @@ async def get_player(
 
     result = await db.execute(
         select(Player)
-        .options(selectinload(Player.stats))
+        .options(selectinload(Player.stats), selectinload(Player.payment))
         .where(Player.id == player_id)
     )
 
@@ -93,7 +102,7 @@ async def get_all_players(db: AsyncSession) -> list[Player]:
 
     result = await db.execute(
         select(Player)
-        .options(selectinload(Player.stats))
+        .options(selectinload(Player.stats), selectinload(Player.payment))
         .order_by(Player.created_at.desc())
     )
 
@@ -113,6 +122,7 @@ async def update_player(
         return None
 
     update_data = data.model_dump(exclude_unset=True)
+    amount_paid = update_data.pop("amount_paid", None)  # handle separately
 
     # Check uniqueness if updating phone number
     if "phone_number" in update_data:
@@ -153,6 +163,17 @@ async def update_player(
 
         setattr(player, field, value)
 
+    # Update payment record if amount_paid was provided
+    if amount_paid is not None:
+        result_pay = await db.execute(
+            select(RegistrationPayment).where(RegistrationPayment.player_id == player_id)
+        )
+        existing_payment = result_pay.scalar_one_or_none()
+        if existing_payment:
+            existing_payment.amount_paid = amount_paid
+        else:
+            db.add(RegistrationPayment(player_id=player_id, amount_paid=amount_paid))
+
     # Log update
     log = AdminLog(
         action_type="UPDATE",
@@ -170,7 +191,7 @@ async def update_player(
     # Reload with stats
     result = await db.execute(
         select(Player)
-        .options(selectinload(Player.stats))
+        .options(selectinload(Player.stats), selectinload(Player.payment))
         .where(Player.id == player.id)
     )
 

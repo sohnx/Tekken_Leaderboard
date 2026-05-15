@@ -18,13 +18,16 @@ async def start_new_match(data: MatchStart, db: AsyncSession = Depends(get_db)):
     """Start a new match between two players."""
     try:
         match = await start_match(db, data)
-        # Notify connected clients of new match
-        await manager.broadcast_match_event("match_started", {
-            "match_id": match.id,
-            "player1_id": match.player1_id,
-            "player2_id": match.player2_id,
-            "round_type": match.round_type,
-        })
+        # Notify connected clients — non-fatal if WS fails
+        try:
+            await manager.broadcast_match_event("match_started", {
+                "match_id": match.id,
+                "player1_id": match.player1_id,
+                "player2_id": match.player2_id,
+                "round_type": match.round_type,
+            })
+        except Exception:
+            logger.warning("WebSocket broadcast failed after starting match — match was still created")
         return {"message": "Match started", "match_id": match.id, "success": True}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -39,15 +42,17 @@ async def record_match_result(data: MatchResult, db: AsyncSession = Depends(get_
     try:
         match = await record_result(db, data)
 
-        # Broadcast updated leaderboard to all WebSocket clients
-        leaderboard = await get_leaderboard(db)
-        await manager.broadcast_leaderboard(leaderboard)
-
-        await manager.broadcast_match_event("match_result", {
-            "match_id": match.id,
-            "winner_id": match.winner_id,
-            "loser_id": match.loser_id,
-        })
+        # Broadcast updated leaderboard — non-fatal if WS fails
+        try:
+            leaderboard = await get_leaderboard(db)
+            await manager.broadcast_leaderboard(leaderboard)
+            await manager.broadcast_match_event("match_result", {
+                "match_id": match.id,
+                "winner_id": match.winner_id,
+                "loser_id": match.loser_id,
+            })
+        except Exception:
+            logger.warning("WebSocket broadcast failed after recording result — result was still saved")
 
         return {"message": "Result recorded", "match_id": match.id, "winner_id": match.winner_id, "success": True}
     except ValueError as e:
@@ -79,10 +84,13 @@ async def undo_last(db: AsyncSession = Depends(get_db)):
     try:
         info = await undo_last_match(db)
 
-        # Broadcast updated leaderboard after undo
-        leaderboard = await get_leaderboard(db)
-        await manager.broadcast_leaderboard(leaderboard)
-        await manager.broadcast_match_event("match_undone", info)
+        # Broadcast updated leaderboard after undo — non-fatal if WS fails
+        try:
+            leaderboard = await get_leaderboard(db)
+            await manager.broadcast_leaderboard(leaderboard)
+            await manager.broadcast_match_event("match_undone", info)
+        except Exception:
+            logger.warning("WebSocket broadcast failed after undo — undo was still applied")
 
         return {"message": "Last match undone successfully", "undone_match": info, "success": True}
     except ValueError as e:

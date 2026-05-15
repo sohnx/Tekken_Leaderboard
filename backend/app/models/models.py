@@ -23,6 +23,7 @@ class Player(Base):
 
     # Relationships
     stats = relationship("PlayerStats", back_populates="player", uselist=False, cascade="all, delete-orphan")
+    payment = relationship("RegistrationPayment", back_populates="player", uselist=False, cascade="all, delete-orphan")
     matches_as_p1 = relationship("Match", foreign_keys="Match.player1_id", back_populates="player1")
     matches_as_p2 = relationship("Match", foreign_keys="Match.player2_id", back_populates="player2")
     wins = relationship("Match", foreign_keys="Match.winner_id", back_populates="winner")
@@ -98,6 +99,27 @@ class PlayerStats(Base):
 
     def __repr__(self):
         return f"<PlayerStats player={self.player_id} score={self.score}>"
+
+
+class RegistrationPayment(Base):
+    __tablename__ = "registration_payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    player_id = Column(Integer, ForeignKey("players.id", ondelete="CASCADE"), nullable=False, unique=True)
+    amount_paid = Column(Float, nullable=False, default=0.0)
+    payment_method = Column(String(50), nullable=True)   # e.g. "cash", "upi", etc.
+    notes = Column(Text, nullable=True)
+    paid_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Relationship
+    player = relationship("Player", back_populates="payment")
+
+    __table_args__ = (
+        Index("ix_registration_payments_player_id", "player_id"),
+    )
+
+    def __repr__(self):
+        return f"<RegistrationPayment player={self.player_id} amount={self.amount_paid}>"
 
 
 class AdminLog(Base):

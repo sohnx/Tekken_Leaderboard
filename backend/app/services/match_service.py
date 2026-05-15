@@ -256,7 +256,7 @@ async def get_match_history(db: AsyncSession, limit: int = 50) -> list[dict]:
             "played_at": m.played_at.isoformat() if m.played_at else None,
             "player1_name": m.player1.tekken_name if m.player1 else None,
             "player2_name": m.player2.tekken_name if m.player2 else None,
-            "winner_name": m.winner.tekken_name if m.winner else None,
+            "winner_name": m.winner.tekken_name if m.winner_id and m.winner else None,
             "status": "completed" if m.winner_id else "pending",
         })
 
