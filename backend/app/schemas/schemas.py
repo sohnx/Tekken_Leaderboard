@@ -66,6 +66,7 @@ class PaymentOut(BaseModel):
 class PlayerOut(BaseModel):
     id: int
     full_name: str
+    phone_number: str
     tekken_name: str
     college_name: Optional[str]
     department: Optional[str]
